@@ -13,7 +13,7 @@
 ## General info
 Unsupervised learning approaches are frequently employed to identify patient subgroups and biomarkers such as disease-associated genes. Biclustering is a powerful technique often used with expression data to cluster genes along with patients. However, the genes forming biclusters are often not functionally related, complicating interpretation of the results. 
 
-To alleviate this, we developed the network-constrained biclustering approach BiGAnts which **(i)** restricts biclusters to functionally related genes connected in molecular interaction networks and **(ii)** maximizes the expression difference between two subgroups of patients.
+To alleviate this, we developed the network-constrained biclustering approach BiCoN which **(i)** restricts biclusters to functionally related genes connected in molecular interaction networks and **(ii)** maximizes the expression difference between two subgroups of patients.
 
 ![alt text](https://github.com/biomedbigdata/BiCoN/blob/master/img/schema.png?raw=true)
 
@@ -22,7 +22,7 @@ To alleviate this, we developed the network-constrained biclustering approach Bi
 
 To install the package from PyPI please run:
 
-`pip install bigants` 
+`pip install bicon` 
 
 To install the package from git:
 
@@ -120,9 +120,9 @@ BiCoN.**run**(self, n_proc = 1, K = 20, evaporation = 0.5, show_plot = False)
 Import the package:
 
 ```python
-from bigants import data_preprocessing
-from bigants import BiCoN
-from bigants import results_analysis
+from bicon import data_preprocessing
+from bicon import BiCoN
+from bicon import results_analysis
 ```
 Set the paths to the expression matrix and the PPI network:
 
