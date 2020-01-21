@@ -1,0 +1,8 @@
+prune results/
+prune ".git/"
+
+prune .gitignore
+
+global-exclude *_test.py
+
+
