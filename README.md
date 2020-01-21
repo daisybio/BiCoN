@@ -15,7 +15,7 @@ Unsupervised learning approaches are frequently employed to identify patient sub
 
 To alleviate this, we developed the network-constrained biclustering approach BiGAnts which **(i)** restricts biclusters to functionally related genes connected in molecular interaction networks and **(ii)** maximizes the expression difference between two subgroups of patients.
 
-![alt text](https://github.com/biomedbigdata/BiGAnts-PyPI-package/blob/master/img/schema.png?raw=true)
+![alt text](https://github.com/biomedbigdata/BiCoN/blob/master/img/schema.png?raw=true)
 
 
 ## Installation
@@ -230,7 +230,7 @@ OR
 
 2. If the average score became equal (or nearly equal) to the maximal score:
 
-![text](https://github.com/biomedbigdata/BiCoNe/blob/master/img/conv1.png?raw=true)
+![text](https://github.com/biomedbigdata/BiCoN/blob/master/img/conv1.png?raw=true)
 
 * The algorithm did not converge:
 
