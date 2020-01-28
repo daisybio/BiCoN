@@ -120,9 +120,9 @@ BiCoN.**run**(self, n_proc = 1, K = 20, evaporation = 0.5, show_plot = False)
 Import the package:
 
 ```python
-from bigants import data_preprocessing
-from bigants import BiCoN
-from bigants import results_analysis
+from bicon import data_preprocessing
+from bicon import BiCoN
+from bicon import results_analysis
 ```
 Set the paths to the expression matrix and the PPI network:
 
