@@ -173,8 +173,7 @@ class BiCoN(object):
                 avs.append(av_score)
                 # after all ants have finished:
                 scores.append(max_round_score)
-                if max_round_score == max_total_score:
-                    count_small = count_small + 1
+
                 end = time.time()
                 print("total run-time is {0}".format(end - st))
 
@@ -199,7 +198,14 @@ class BiCoN(object):
             t0 = self.pher_upd(t0, t_min, evaporation, [n1, n2], solution_big_best)
             # Probability update
             probs = self.prob_upd(H, t0, a, b, n, th, N)
-            assert probs[0][0, :].sum() != 0, "bad probability update"
+            if probs[0][0, :].sum() == 0:
+                th = 0
+                probs = self.prob_upd(H, t0, a, b, n, th, N)
+            # lower the threshold even more even there are still not enough conected genes
+            if probs[0][0, :].sum() == 0:
+                th = -1
+                probs = self.prob_upd(H, t0, a, b, n, th, N)
+            assert probs[0][0,:].sum() != 0, "Bad probability update. Try selecting more genes (e.g. 3000) and setting 'th' to -1 "
             if count_big == 0:
                 print("One full iteration takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
             count_big = count_big + 1
