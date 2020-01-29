@@ -231,15 +231,15 @@ class results_analysis():
         plt.rc('axes', titlesize=20)  # fontsize of the axes title
         plt.rc('axes', labelsize=20)  # fontsize of the x and y labels
         plt.rc('xtick', labelsize=20)  # fontsize of the tick labels
-        plt.rc('ytick', labelsize=20)  # fontsize of the tick labels
+        plt.rc('ytick', labelsize=10)  # fontsize of the tick labels
         plt.rc('legend', fontsize=20)
 
         if true_labels != None:
-            g = sns.clustermap(GE_small.T, row_colors=[row_colors1, row_colors2], row_cluster=False, col_cluster=False,
-                               col_colors=col_colors, figsize=(15, 10), cbar_kws=dict(ticks=[5, 0, -5]),
+            g = sns.clustermap(GE_small.T, row_colors=[row_colors1, row_colors2], row_cluster=True, col_cluster=False,
+                               col_colors=col_colors, figsize=(15, 10),
                                cmap="Spectral", yticklabels=False)
-            g.ax_row_dendrogram.set_visible(False)
-            g.cax.set_visible(False)
+            # g.ax_row_dendrogram.set_visible(False)
+            # g.cax.set_visible(False)
 
             values = ["true class1", "true class2", "cluster1", "cluster2"]
             colors = ['#F3FF33', 'm', '#4FB6D3', '#22863E']
@@ -251,11 +251,11 @@ class results_analysis():
             g.ax_col_dendrogram.legend(loc="upper center", ncol=2, bbox_to_anchor=(0.72, 0.87),
                                        borderaxespad=0.)
         else:
-            g = sns.clustermap(GE_small.T, row_colors=row_colors1, row_cluster=False, col_cluster=False,
-                               col_colors=col_colors, figsize=(15, 10), cbar_kws=dict(ticks=[5, 0, -5]),
+            g = sns.clustermap(GE_small.T, row_colors=row_colors1, row_cluster=True, col_cluster=False,
+                               col_colors=col_colors, figsize=(15, 10),
                                cmap="Spectral", yticklabels=False)
-            g.ax_row_dendrogram.set_visible(False)
-            g.cax.set_visible(False)
+            # g.ax_row_dendrogram.set_visible(False)
+            # g.cax.set_visible(False)
 
             values = ["cluster1", "cluster2"]
             colors = ['#4FB6D3', '#22863E']
