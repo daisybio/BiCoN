@@ -8,7 +8,7 @@ import networkx as nx
 import csv
 
 
-def data_preprocessing(path_expr, path_net, log2=True, zscores=True, size=2000, no_zero=None, formats=[]):
+def data_preprocessing(path_expr, path_net, log2=True, zscores=True, size=2000, no_zero=None, formats=None):
     """
     Raw data processing for further analysis
 
@@ -24,10 +24,11 @@ def data_preprocessing(path_expr, path_net, log2=True, zscores=True, size=2000, 
     no_zero - proportion of non-zero elements for each gene. If there are less values then a gene will not be maintained
     format = list of data types for gene expression matrix and the ppi network. Example ["csv", "tsv"]. Used if the automatic delimiter needs to be omitted
     """
+
     d_expr = None
     d_ppi = None
 
-    if len(formats) == 2:
+    if formats != None:
         if formats[0] in ("csv", "tsv"):
             d_expr = formats[0]
 
@@ -35,7 +36,6 @@ def data_preprocessing(path_expr, path_net, log2=True, zscores=True, size=2000, 
             d_ppi = formats[1]
 
     expr = open_file(path_expr, d_expr)
-
     expr = expr.set_index(expr.columns[0])
     patients_new = list(set(expr.columns))
     tot_pats = len(patients_new)
@@ -118,6 +118,7 @@ def open_file(file_name, d, **kwargs):
         else:  # the file is StringIO
             file_name.seek(0)
             dialect = csv.Sniffer().sniff(file_name.readline())
+
             file_name.seek(0)
         sp = dialect.delimiter
     else:
