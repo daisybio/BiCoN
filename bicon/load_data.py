@@ -24,20 +24,17 @@ def data_preprocessing(path_expr, path_net, log2=True, zscores=True, size=2000, 
     no_zero - proportion of non-zero elements for each gene. If there are less values then a gene will not be maintained
     format = list of data types for gene expression matrix and the ppi network. Example ["csv", "tsv"]. Used if the automatic delimiter needs to be omitted
     """
+
+    d_expr = None
+    d_ppi = None
+
     if formats != None:
-        if formats[0] == "csv" or formats[0] == "tsv":
+        if formats[0] in ("csv", "tsv"):
             d_expr = formats[0]
-        else:
-            d_expr = None
-        if formats[1] == "csv" or formats[1] == "tsv":
+
+        if formats[1] in ("csv", "tsv"):
             d_ppi = formats[1]
-        else:
-            d_ppi = None
 
-
-    else:
-        d_expr = None
-        d_ppi = None
     expr = open_file(path_expr, d_expr)
     expr = expr.set_index(expr.columns[0])
     patients_new = list(set(expr.columns))
@@ -113,14 +110,15 @@ def data_preprocessing(path_expr, path_net, log2=True, zscores=True, size=2000, 
 
 
 # allows to determine the delimiter automatically given the path or directly the object
-def open_file(file_name, d, **kwards):
+def open_file(file_name, d, **kwargs):
     if d == None:
         if isinstance(file_name, str):
             with open(file_name, 'r') as csvfile:
-                dialect = csv.Sniffer().sniff(csvfile.read(300))
+                dialect = csv.Sniffer().sniff(csvfile.readline())
         else:  # the file is StringIO
             file_name.seek(0)
-            dialect = csv.Sniffer().sniff(file_name.read(300))
+            dialect = csv.Sniffer().sniff(file_name.readline())
+
             file_name.seek(0)
         sp = dialect.delimiter
     else:
@@ -129,5 +127,5 @@ def open_file(file_name, d, **kwards):
         if d == "tsv":
             sp = "\t"
 
-    file = pd.read_csv(file_name, sep=sp, low_memory=False, **kwards)
+    file = pd.read_csv(file_name, sep=sp, low_memory=False, **kwargs)
     return file
