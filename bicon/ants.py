@@ -58,12 +58,11 @@ class BiCoN(object):
         show_nets - set true if the selected network should be shown at each iteration
 
         """
-        assert self.GE.shape[0] > self.GE.shape[
-            1], "Wrong dimensions of the expression matrix, please pass the transposed version"
+
         assert n_proc > 0, "Set a correct number for n_proc, right now the value is {0}".format(n_proc)
         assert n_proc <= mp.cpu_count() - 1, 'n_proc should not exceed {0}. The value of n_proc was: {1}'.format(
             mp.cpu_count(), n_proc)
-        assert n_proc <= K, 'Number of ants (K) can not be lower as number of processes, please set higher K ot lower n_proc'
+        assert n_proc <= K, 'Number of ants (K) can not be lower as number of processes, please set higher K or lower n_proc'
         # adjacency matrix
         A = nx.adj_matrix(self.G).todense()
         # heurisic information
