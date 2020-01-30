@@ -204,7 +204,8 @@ class BiCoN(object):
             if probs[0][0, :].sum() == 0:
                 th = -1
                 probs = self.prob_upd(H, t0, a, b, n, th, N)
-            assert probs[0][0,:].sum() != 0, "Bad probability update. Try selecting more genes (e.g. 3000)"
+            assert probs[0][0,:].sum() != 0, 'Bad probability update. This often happens when there are not enough connected genes or ' \
+                                             'the signal in the data is too weak. Try selecting more genes (e.g. 3000)'
             if count_big == 0:
                 print("One full iteration takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
             count_big = count_big + 1
