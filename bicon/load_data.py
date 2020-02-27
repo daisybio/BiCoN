@@ -82,23 +82,25 @@ def data_preprocessing(path_expr, path_net, log2=True, zscores=True, size=2000, 
 
     expr = expr.loc[genes_for_expr]
     if zscores:
-        expr = pd.DataFrame(stats.zscore(expr), columns=expr.columns, index=expr.index)
+        expr = pd.DataFrame((stats.zscore(expr.T)).T, columns=expr.columns, index=expr.index)
 
     labels = dict()
     rev_labels = dict()
     node = 0
     # nodes = set(deg_nodes + genes_aco)
-    for g in genes_for_expr:
+    genes = list(expr.index)
+    pts = list(expr.columns)
+    for g in genes:
         labels[node] = g
         rev_labels[g] = node
         node = node + 1
-    for p in patients_new:
+    for p in pts:
         labels[node] = p
         rev_labels[p] = node
         node = node + 1
     n, m = expr.shape
     G = nx.Graph()
-    G.add_nodes_from(np.arange(n))
+#    G.add_nodes_from(np.arange(n))
     for row in net.itertuples():
         node1 = str(row[1])
         node2 = str(row[2])

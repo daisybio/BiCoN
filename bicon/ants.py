@@ -27,7 +27,7 @@ class BiCoN(object):
         self.L_g_min = L_g_min
         self.L_g_max = L_g_max
 
-    def run_search(self, n_proc=1, a=1, b=1, K=20, evaporation=0.5, th=0.5, eps=0.02,
+    def run_search(self, n_proc=1, a=1, b=1, K=20, evaporation=0.5, th=1, eps=0.02,
                    times=6, clusters=2, cost_limit=5, max_iter=200, ls=False, opt=None, show_pher=False,
                    show_plot=False, save=None, show_nets=False):
         """
@@ -48,7 +48,7 @@ class BiCoN(object):
         a - pheromone significance (default 1 - does not need to be changed)
         b - heuristic information significance (default 1 - does not need to be changed)
         evaporation - the rate at which pheromone evaporates (default 0.5)
-        th - similarity threshold (default 0.5 - does not need to be changed)
+        th - similarity threshold (default 1 - does not need to be changed)
         eps - conservative convergence criteria: score_max - score_min < eps (default- 0.02)
         times - allows faster convergence criteria: stop if the maximum so far was reached more than x times (default 6)
         clusters - # of clusters, right now does not work for more than 2
@@ -201,11 +201,13 @@ class BiCoN(object):
             # Probability update
             probs = self.prob_upd(H, t0, a, b, n, th, N)
             if probs[0][0, :].sum() == 0:
+                print("threshold lowered")
                 th = 0
                 probs = self.prob_upd(H, t0, a, b, n, th, N)
             # lower the threshold even more even there are still not enough conected genes
             if probs[0][0, :].sum() == 0:
                 th = -1
+                print("minimal possible threshold employed)")
                 probs = self.prob_upd(H, t0, a, b, n, th, N)
             assert probs[0][0,
                    :].sum() != 0, 'Bad probability update. This often happens when there are not enough connected genes or ' \
@@ -501,6 +503,8 @@ class BiCoN(object):
         H_small = H_full[:n, :n]
         H_small = np.multiply(H_small, A_new)
         H_full[:n, :n] = H_small
+        th = np.median(H_full.mean(axis = 1))
+        H_full[H_full < th] = 0
         return (H_full)
 
     def print_clusters(self, GE, solution):
@@ -537,6 +541,7 @@ class BiCoN(object):
 
         means1 = list(np.mean(GE[patients1].loc[genes1], axis=1) - np.mean(GE[patients2].loc[genes1], axis=1).values)
         means2 = list(np.mean(GE[patients1].loc[genes2], axis=1) - np.mean(GE[patients2].loc[genes2], axis=1).values)
+
         G_small = nx.subgraph(G, genes1 + genes2)
 
         fig = plt.figure(figsize=(15, 10))
@@ -581,8 +586,7 @@ class BiCoN(object):
                 while max_out > 0:
                     # measure the difference in the expression between two groups for d == 1 nodes
 
-                    dif = np.mean(GE[patients_groups[clust]].loc[ones], axis=1) - np.mean(
-                        GE[patients_groups[not_clust]].loc[ones], axis=1)
+                    dif = np.mean(GE[patients_groups[clust]].loc[ones], axis=1) - np.mean(GE[patients_groups[not_clust]].loc[ones], axis=1)
                     dif = dif.sort_values()
                     # therefore we select the nodes with d == 1 and low difference
                     ones = list(dif[dif < 1.5].index)
