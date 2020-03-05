@@ -114,12 +114,15 @@ class results_analysis():
         GE_small.columns = self.patients1 + self.patients2
         # compute difference in expression for each gene in different patients groups
         if self.convert:
-
-            means = list(np.mean(GE_small[self.patients1].loc[all_genes_names], axis=1) - np.mean(
-                GE_small[self.patients2].loc[all_genes_names], axis=1).values)
+            nl1 = genes1_name
+            nl2 = genes2_name
         else:
-            means = list(np.mean(GE_small[self.patients1].loc[all_genes_entr], axis=1) - np.mean(
-                GE_small[self.patients2].loc[all_genes_entr], axis=1).values)
+            nl1 = self.genes1
+            nl2 = self.genes2
+        means1 = list(np.mean(GE_small[self.patients1].loc[nl1], axis=1) - np.mean(
+            GE_small[self.patients2].loc[nl1], axis=1).values)
+        means2 = list(np.mean(GE_small[self.patients1].loc[nl2], axis=1) - np.mean(
+            GE_small[self.patients2].loc[nl2], axis=1).values)
 
         # set plotting settings
         plt.rc('font', size=20)  # controls default text sizes
@@ -135,8 +138,10 @@ class results_analysis():
         cmap = mpl.colors.ListedColormap(cmap[10:, :-1])
         pos = nx.spring_layout(G_small)
         nx.draw_networkx_edges(G_small, pos)
-        nc1 = nx.draw_networkx_nodes(G_small, pos=pos, node_color=means, node_size=1700, alpha=.7,
+        nc1 = nx.draw_networkx_nodes(G_small, nodelist = nl1, pos=pos, node_color=means1, node_size=1700, alpha=.7,
                                      vmin=vmin, vmax=vmax, cmap=cmap, node_shape="s")
+        nc2 = nx.draw_networkx_nodes(G_small, nodelist = nl2, pos=pos, node_color=means2, node_size=1700, alpha=.7,
+                                     vmin=vmin, vmax=vmax, cmap=cmap, node_shape="^")
         nx.draw_networkx_labels(G_small, pos, font_size=22, font_weight="heavy")
         plt.colorbar(nc1)
         plt.axis('off')
@@ -237,7 +242,7 @@ class results_analysis():
         if true_labels != None:
             g = sns.clustermap(GE_small.T, row_colors=[row_colors1, row_colors2], row_cluster=True, col_cluster=False,
                                col_colors=col_colors, figsize=(15, 10),
-                               cmap="Spectral", yticklabels=False)
+                               cmap="Spectral")
             # g.ax_row_dendrogram.set_visible(False)
             # g.cax.set_visible(False)
 
@@ -253,7 +258,7 @@ class results_analysis():
         else:
             g = sns.clustermap(GE_small.T, row_colors=row_colors1, row_cluster=True, col_cluster=False,
                                col_colors=col_colors, figsize=(15, 10),
-                               cmap="Spectral", yticklabels=False)
+                               cmap="Spectral")
             # g.ax_row_dendrogram.set_visible(False)
             # g.cax.set_visible(False)
 
@@ -319,7 +324,8 @@ class results_analysis():
         genes1_name = [self.mapping[x] for x in self.genes1]
         genes2_name = [self.mapping[x] for x in self.genes2]
         all_genes_names = genes1_name + genes2_name
-        gseapy.enrichr(gene_list=all_genes_names, description='pathway', gene_sets=library, cutoff=0.05, outdir=output)
+        res = gseapy.enrichr(gene_list=all_genes_names, description='pathway', gene_sets=library, cutoff=0.05, outdir=output)
+        return(res.results)
 
     def convergence_plot(self, scores, output=None):
         """
