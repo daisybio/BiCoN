@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from sklearn import preprocessing
 import seaborn as sns
 from sklearn.cluster import KMeans
+from tqdm import tqdm
 import gc
 import operator
 # import warnings
@@ -29,7 +30,7 @@ class BiCoN(object):
 
     def run_search(self, n_proc=1, a=1, b=1, K=20, evaporation=0.5, th=1, eps=0.02,
                    times=6, clusters=2, cost_limit=5, max_iter=200, ls=False, opt=None, show_pher=False,
-                   show_plot=False, save=None, show_nets=False):
+                   show_plot=False, save=None, show_nets=False, verbose=False):
         """
         Parallel implementation of network constrained bi-clustering
 
@@ -40,7 +41,7 @@ class BiCoN(object):
         GE - pandas data frame with gene expression data. Genes are rows, patients - columns
         G - networkX graph with a network
         L_g_min - minimal number of genes in one subnetwork
-        L_g_max - minimal number of genes in one subnetwork
+        L_g_max - maximal number of genes in one subnetwork
 
         default:
         K - number of ants (less ants - less space exploration. Usually set between 20 and 50, default - 20)
@@ -99,10 +100,11 @@ class BiCoN(object):
         end = time.time()
         # flag tracks when the score stops improving and terminates the optimization as convergence is reached
         score_change = []
-        print("Run time statistics:")
-        print("###############################################################")
-        print("the joint graph has " + str(n + m) + " nodes")
-        print("probability update takes " + str(round(end - st, 3)))
+        if verbose:
+            print("Run time statistics:")
+            print("###############################################################")
+            print("the joint graph has " + str(n + m) + " nodes")
+            print("probability update takes " + str(round(end - st, 3)))
         count_small = 0
         # termination if the improvements are getting too small
         while np.abs(max_round_score - av_score) > eps and count_small < times and count_big < max_iter:
@@ -113,6 +115,7 @@ class BiCoN(object):
                 result = Queue()
                 jobs = []
                 ants_per_batch = round(K / n_proc)
+
                 for pr in range(n_proc):
                     # random random seeds to avoid identical random walks
                     ss = np.random.choice(np.arange(pr * ants_per_batch, pr * ants_per_batch + ants_per_batch),
@@ -152,7 +155,7 @@ class BiCoN(object):
                 max_round_score = 0
                 scores_per_round = []
                 st = time.time()
-                for i in range(K):
+                for i in tqdm(range(K)):
                     # for each ant
                     tot_score, gene_groups, patients_groups, new_scores, wars, no_int = self.ant_job(self.GE, N, H, th,
                                                                                                      clusters, probs, a,
@@ -190,12 +193,13 @@ class BiCoN(object):
                 count_small = 0
 
             score_change.append(round(max_round_score, 3))
-            print("Iteration # " + str(count_big + 1))
-            if count_big == 0:
-                print("One ant work takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
-            print("best round score: " + str(round(max_round_score, 3)))
-            print("average score: " + str(round(av_score, 3)))
-            print("Count small = {}".format(count_small))
+            if verbose:
+                print("Iteration # " + str(count_big + 1))
+                if count_big == 0:
+                    print("One ant work takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
+                print("best round score: " + str(round(max_round_score, 3)))
+                print("average score: " + str(round(av_score, 3)))
+                print("Count small = {}".format(count_small))
             # Pheromone update
             t0 = self.pher_upd(t0, t_min, evaporation, [n1, n2], solution_big_best)
             # Probability update
@@ -258,31 +262,7 @@ class BiCoN(object):
                 ge[best_solution[0][1], :][:, (np.asarray(patients_groups[0]) - n)]):
             patients_groups = patients_groups[::-1]
         best_solution = [best_solution[0], patients_groups]
-        # print("best  score: " + str(max_total_score))
-        # if ls:
-        #     components, sizes = self.opt_net(best_solution[0], patients_groups, self.L_g_min, self.L_g_max, self.G, self.GE, clusters)
-        #     max_total_score = self.score(self.G, patients_groups, components, n, m, ge, sizes, self.L_g_min, self.L_g_max)
-        #     max_total_score = max_total_score[0][0] * max_total_score[0][1] + max_total_score[1][0] * max_total_score[1][1]
-        #     scores.append(max_total_score)
-        #
-        #     best_solution = [components, patients_groups]
-        #     #
-        #     # data_new = ge[best_solution[0][0] + best_solution[0][1], :]
-        #     # kmeans = KMeans(n_clusters=2, random_state=0).fit(data_new.T)
-        #     # labels = kmeans.labels_
-        #     # patients_groups = []
-        #     # for clust in range(clusters):
-        #     #     wh = np.where(labels == clust)[0]
-        #     #     group_p = [patients[i] for i in wh]
-        #     #     patients_groups.append(group_p)
-        #     # if np.mean(ge[best_solution[0][0], :][:, (np.asarray(patients_groups[0]) - n)]) < np.mean(
-        #     #         ge[best_solution[0][1], :][:, (np.asarray(patients_groups[0]) - n)]):
-        #     #     patients_groups = patients_groups[::-1]
-        #     best_solution = [best_solution[0], patients_groups]
-        #     print("best  score after LS: " + str(max_total_score))
-        #
-        #
-        #
+
         # # print_clusters(GE,best_solution)
         # # features(best_solution, GE,G)
         return (best_solution, [count_big, scores, avs])
@@ -433,7 +413,7 @@ class BiCoN(object):
     def pher_upd(self, t, t_min, p, scores, solution):
         t = t * (1 - p)
         t_new = np.copy(t)
-        assert t_new.sum() > 0, "bad pheramone input"
+        assert t_new.sum() > 0, "bad pheromone input"
         for i in range(len(solution[0])):
             group_g = solution[0][i]
             group_p = solution[1][i]
@@ -447,9 +427,9 @@ class BiCoN(object):
                 for g2 in group_g:
                     t_new[g1, g2] = t[g1, g2] + sc
 
-        assert t_new.sum() >= 0, "negative pheramone update"
+        assert t_new.sum() >= 0, "negative pheromone update"
         t_new[t_new < t_min] = t_min
-        assert t_new.sum() != 0, "bad pheramone update"
+        assert t_new.sum() != 0, "Bad pheromone update"
 
         return (t_new)
 
@@ -639,10 +619,10 @@ class BiCoN(object):
     #                 results = {**self.insertion(L_max, nodes0, G, GE, patients_groups, clust),
     #                            **self.deletion(L_min, nodes0, G, GE, patients_groups, clust),
     #                            **self.subst(L_max, nodes0, G, GE, patients_groups, clust)}
-    #
+
     #                 action = max(results.items(), key=operator.itemgetter(1))[0]
     #                 score1 = results[action]
-    #
+
     #                 delta = score0 - score1
     #                 if delta < 0:  # move on
     #                     # print(action)
@@ -650,19 +630,19 @@ class BiCoN(object):
     #                     nodes = self.do_action_nodes(action, nodes0)
     #                     nodes0 = nodes
     #                     score0 = score1
-    #
+
     #                 else:  # terminate if no improvement
     #                     move = False
     #                     print("network {0} has converged".format(clust))
     #                     print(score1)
     #                     print(nx.is_connected(nx.subgraph(G,nodes)))
-    #
+
     #         group_g = nodes
     #         size_comp = len(nodes)
     #         genes_components.append(group_g)
     #         sizes.append(size_comp)
     #     return genes_components, sizes
-    #
+
     # def is_removable(self, nodes, G, node=None):
     #     g = nx.subgraph(G, nodes)
     #     is_rem = dict()
@@ -677,12 +657,12 @@ class BiCoN(object):
     #         else:
     #             is_rem[node] = True
     #     return is_rem
-    #
+
     # def get_candidates(self, nodes, G):
     #     subst_candidates = flatten([[n for n in G.neighbors(x)] for x in nodes])
     #     subst_candidates = set(subst_candidates).difference(set(nodes))
     #     return subst_candidates
-    #
+
     # def insertion(self, L_max, nodes, G, GE, patients_groups, clust):
     #     results = dict()
     #     no_clust = int(clust == 0)
@@ -694,12 +674,12 @@ class BiCoN(object):
     #             sc = self.new_score(GE, patients_groups[clust], patients_groups[no_clust], nodes_new)
     #             results["i_" + str(c)] = sc
     #     return results
-    #
+
     # def deletion(self, L_min, nodes, G, GE, patients_groups, clust):
     #     results = dict()
     #     size = len(nodes)
     #     no_clust = int(clust == 0)
-    #
+
     #     if size > L_min:
     #         rem = self.is_removable(nodes, G)
     #         for node in nodes:
@@ -708,12 +688,12 @@ class BiCoN(object):
     #                 sc = self.new_score(GE, patients_groups[clust], patients_groups[no_clust], nodes_new)
     #                 results["d_" + str(node)] = sc
     #     return results
-    #
+
     # def subst(self, L_max, nodes, G, GE, patients_groups, clust):
     #     results = dict()
     #     size = len(nodes)
     #     no_clust = int(clust == 0)
-    #
+
     #     if size < L_max:
     #         candidates = self.get_candidates(nodes, G)
     #         for node in nodes:
@@ -727,12 +707,12 @@ class BiCoN(object):
     #                 else:
     #                     pass
     #     return results
-    #
+
     # def new_score(self, GE, pg, npg, gg):
     #     dif = np.mean(np.mean(GE[pg].loc[gg], axis=1)) - np.mean(np.mean(
     #         GE[npg].loc[gg], axis=1))
     #     return dif
-    #
+
     # def do_action_nodes(self, action, nodes):
     #     if len(action.split("_")) == 2:  ##inserion or delition
     #         act, node = action.split("_")

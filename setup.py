@@ -28,7 +28,8 @@ setuptools.setup(
         'gseapy==0.9.15',
         'seaborn==0.9.0',
         'mygene==3.1.0',
-        'scikit_learn'
+        'scikit_learn',
+        'tqdm==4.7.2'
     ],
 
 )
