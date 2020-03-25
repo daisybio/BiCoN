@@ -262,6 +262,28 @@ class BiCoN(object):
                 ge[best_solution[0][1], :][:, (np.asarray(patients_groups[0]) - n)]):
             patients_groups = patients_groups[::-1]
         best_solution = [best_solution[0], patients_groups]
+        print("best  score: " + str(max_total_score))
+        if ls:
+            components, sizes = self.opt_net(best_solution[0], patients_groups, self.L_g_min, self.L_g_max, self.G, self.GE, clusters)
+            max_total_score = self.score(self.G, patients_groups, components, n, m, ge, sizes, self.L_g_min, self.L_g_max)
+            max_total_score = max_total_score[0][0] * max_total_score[0][1] + max_total_score[1][0] * max_total_score[1][1]
+            scores.append(max_total_score)
+
+            best_solution = [components, patients_groups]
+            #
+            # data_new = ge[best_solution[0][0] + best_solution[0][1], :]
+            # kmeans = KMeans(n_clusters=2, random_state=0).fit(data_new.T)
+            # labels = kmeans.labels_
+            # patients_groups = []
+            # for clust in range(clusters):
+            #     wh = np.where(labels == clust)[0]
+            #     group_p = [patients[i] for i in wh]
+            #     patients_groups.append(group_p)
+            # if np.mean(ge[best_solution[0][0], :][:, (np.asarray(patients_groups[0]) - n)]) < np.mean(
+            #         ge[best_solution[0][1], :][:, (np.asarray(patients_groups[0]) - n)]):
+            #     patients_groups = patients_groups[::-1]
+            best_solution = [best_solution[0], patients_groups]
+            print("best  score after LS: " + str(max_total_score))
 
         # # print_clusters(GE,best_solution)
         # # features(best_solution, GE,G)
@@ -603,128 +625,128 @@ class BiCoN(object):
             sizes.append(size_comp)
         return genes_components, sizes
 
-    # def opt_net(self, gene_groups, patients_groups, L_min, L_max, G, GE, clusters):
-    #     genes_components = []
-    #     sizes = []
-    #     for clust in range(clusters):
-    #         not_clust = int(clust == 0)
-    #         g = nx.subgraph(G, gene_groups[clust])
-    #         # we are taking only the biggest connected component
-    #         nodes0 = max(nx.connected_component_subgraphs(g), key=len)
-    #         nodes0 = nodes = list(nodes0.nodes)
-    #         score0 = self.new_score(GE, patients_groups[clust], patients_groups[not_clust], nodes0)
-    #         move = True
-    #         if len(nodes0) != 0:
-    #             while move == True:
-    #                 results = {**self.insertion(L_max, nodes0, G, GE, patients_groups, clust),
-    #                            **self.deletion(L_min, nodes0, G, GE, patients_groups, clust),
-    #                            **self.subst(L_max, nodes0, G, GE, patients_groups, clust)}
+    def opt_net(self, gene_groups, patients_groups, L_min, L_max, G, GE, clusters):
+        genes_components = []
+        sizes = []
+        for clust in range(clusters):
+            not_clust = int(clust == 0)
+            g = nx.subgraph(G, gene_groups[clust])
+            # we are taking only the biggest connected component
+            nodes0 = max(nx.connected_component_subgraphs(g), key=len)
+            nodes0 = nodes = list(nodes0.nodes)
+            score0 = self.new_score(GE, patients_groups[clust], patients_groups[not_clust], nodes0)
+            move = True
+            if len(nodes0) != 0:
+                while move == True:
+                    results = {**self.insertion(L_max, nodes0, G, GE, patients_groups, clust),
+                               **self.deletion(L_min, nodes0, G, GE, patients_groups, clust),
+                               **self.subst(L_max, nodes0, G, GE, patients_groups, clust)}
 
-    #                 action = max(results.items(), key=operator.itemgetter(1))[0]
-    #                 score1 = results[action]
+                    action = max(results.items(), key=operator.itemgetter(1))[0]
+                    score1 = results[action]
 
-    #                 delta = score0 - score1
-    #                 if delta < 0:  # move on
-    #                     # print(action)
-    #                     # print(score1)
-    #                     nodes = self.do_action_nodes(action, nodes0)
-    #                     nodes0 = nodes
-    #                     score0 = score1
+                    delta = score0 - score1
+                    if delta < 0:  # move on
+                        # print(action)
+                        # print(score1)
+                        nodes = self.do_action_nodes(action, nodes0)
+                        nodes0 = nodes
+                        score0 = score1
 
-    #                 else:  # terminate if no improvement
-    #                     move = False
-    #                     print("network {0} has converged".format(clust))
-    #                     print(score1)
-    #                     print(nx.is_connected(nx.subgraph(G,nodes)))
+                    else:  # terminate if no improvement
+                        move = False
+                        print("network {0} has converged".format(clust))
+                        print(score1)
+                        print(nx.is_connected(nx.subgraph(G,nodes)))
 
-    #         group_g = nodes
-    #         size_comp = len(nodes)
-    #         genes_components.append(group_g)
-    #         sizes.append(size_comp)
-    #     return genes_components, sizes
+            group_g = nodes
+            size_comp = len(nodes)
+            genes_components.append(group_g)
+            sizes.append(size_comp)
+        return genes_components, sizes
 
-    # def is_removable(self, nodes, G, node=None):
-    #     g = nx.subgraph(G, nodes)
-    #     is_rem = dict()
-    #     if node != None:
-    #         nodes = [node]
-    #     for node in nodes:
-    #         g_small = g.copy()
-    #         g_small.remove_node(node)
-    #         n = nx.number_connected_components(g_small)
-    #         if n != 1:
-    #             is_rem[node] = False
-    #         else:
-    #             is_rem[node] = True
-    #     return is_rem
+    def is_removable(self, nodes, G, node=None):
+        g = nx.subgraph(G, nodes)
+        is_rem = dict()
+        if node != None:
+            nodes = [node]
+        for node in nodes:
+            g_small = g.copy()
+            g_small.remove_node(node)
+            n = nx.number_connected_components(g_small)
+            if n != 1:
+                is_rem[node] = False
+            else:
+                is_rem[node] = True
+        return is_rem
 
-    # def get_candidates(self, nodes, G):
-    #     subst_candidates = flatten([[n for n in G.neighbors(x)] for x in nodes])
-    #     subst_candidates = set(subst_candidates).difference(set(nodes))
-    #     return subst_candidates
+    def get_candidates(self, nodes, G):
+        subst_candidates = flatten([[n for n in G.neighbors(x)] for x in nodes])
+        subst_candidates = set(subst_candidates).difference(set(nodes))
+        return subst_candidates
 
-    # def insertion(self, L_max, nodes, G, GE, patients_groups, clust):
-    #     results = dict()
-    #     no_clust = int(clust == 0)
-    #     size = len(nodes)
-    #     if size < L_max:
-    #         candidates = self.get_candidates(nodes, G)
-    #         for c in candidates:
-    #             nodes_new = nodes + [c]
-    #             sc = self.new_score(GE, patients_groups[clust], patients_groups[no_clust], nodes_new)
-    #             results["i_" + str(c)] = sc
-    #     return results
+    def insertion(self, L_max, nodes, G, GE, patients_groups, clust):
+        results = dict()
+        no_clust = int(clust == 0)
+        size = len(nodes)
+        if size < L_max:
+            candidates = self.get_candidates(nodes, G)
+            for c in candidates:
+                nodes_new = nodes + [c]
+                sc = self.new_score(GE, patients_groups[clust], patients_groups[no_clust], nodes_new)
+                results["i_" + str(c)] = sc
+        return results
 
-    # def deletion(self, L_min, nodes, G, GE, patients_groups, clust):
-    #     results = dict()
-    #     size = len(nodes)
-    #     no_clust = int(clust == 0)
+    def deletion(self, L_min, nodes, G, GE, patients_groups, clust):
+        results = dict()
+        size = len(nodes)
+        no_clust = int(clust == 0)
 
-    #     if size > L_min:
-    #         rem = self.is_removable(nodes, G)
-    #         for node in nodes:
-    #             if rem[node]:
-    #                 nodes_new = list(set(nodes).difference(set([node])))
-    #                 sc = self.new_score(GE, patients_groups[clust], patients_groups[no_clust], nodes_new)
-    #                 results["d_" + str(node)] = sc
-    #     return results
+        if size > L_min:
+            rem = self.is_removable(nodes, G)
+            for node in nodes:
+                if rem[node]:
+                    nodes_new = list(set(nodes).difference(set([node])))
+                    sc = self.new_score(GE, patients_groups[clust], patients_groups[no_clust], nodes_new)
+                    results["d_" + str(node)] = sc
+        return results
 
-    # def subst(self, L_max, nodes, G, GE, patients_groups, clust):
-    #     results = dict()
-    #     size = len(nodes)
-    #     no_clust = int(clust == 0)
+    def subst(self, L_max, nodes, G, GE, patients_groups, clust):
+        results = dict()
+        size = len(nodes)
+        no_clust = int(clust == 0)
 
-    #     if size < L_max:
-    #         candidates = self.get_candidates(nodes, G)
-    #         for node in nodes:
-    #             for c in candidates:
-    #                 nodes_new = nodes + [c]
-    #                 rem = self.is_removable(nodes_new, G, node)
-    #                 if rem[node]:
-    #                     nodes_new = list(set(nodes_new).difference(set([node])))
-    #                     sc = self.new_score(GE, patients_groups[clust], patients_groups[no_clust], nodes_new)
-    #                     results["s_" + str(node) + "_" + str(c)] = sc
-    #                 else:
-    #                     pass
-    #     return results
+        if size < L_max:
+            candidates = self.get_candidates(nodes, G)
+            for node in nodes:
+                for c in candidates:
+                    nodes_new = nodes + [c]
+                    rem = self.is_removable(nodes_new, G, node)
+                    if rem[node]:
+                        nodes_new = list(set(nodes_new).difference(set([node])))
+                        sc = self.new_score(GE, patients_groups[clust], patients_groups[no_clust], nodes_new)
+                        results["s_" + str(node) + "_" + str(c)] = sc
+                    else:
+                        pass
+        return results
 
-    # def new_score(self, GE, pg, npg, gg):
-    #     dif = np.mean(np.mean(GE[pg].loc[gg], axis=1)) - np.mean(np.mean(
-    #         GE[npg].loc[gg], axis=1))
-    #     return dif
+    def new_score(self, GE, pg, npg, gg):
+        dif = np.mean(np.mean(GE[pg].loc[gg], axis=1)) - np.mean(np.mean(
+            GE[npg].loc[gg], axis=1))
+        return dif
 
-    # def do_action_nodes(self, action, nodes):
-    #     if len(action.split("_")) == 2:  ##inserion or delition
-    #         act, node = action.split("_")
-    #         node = int(node)
-    #         if act == "i":
-    #             nodes = nodes + [node]
-    #         else:
-    #             nodes = list(set(nodes).difference(set([node])))
-    #     else:  # substitution
-    #         act, node, cand = action.split("_")
-    #         node = int(node)
-    #         cand = int(cand)
-    #         nodes = nodes + [cand]
-    #         nodes = list(set(nodes).difference(set([node])))
-    #     return nodes
+    def do_action_nodes(self, action, nodes):
+        if len(action.split("_")) == 2:  ##inserion or delition
+            act, node = action.split("_")
+            node = int(node)
+            if act == "i":
+                nodes = nodes + [node]
+            else:
+                nodes = list(set(nodes).difference(set([node])))
+        else:  # substitution
+            act, node, cand = action.split("_")
+            node = int(node)
+            cand = int(cand)
+            nodes = nodes + [cand]
+            nodes = list(set(nodes).difference(set([node])))
+        return nodes
