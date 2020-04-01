@@ -630,32 +630,39 @@ class BiCoN(object):
             not_clust = int(clust == 0)
             g = nx.subgraph(G, gene_groups[clust])
             # we are taking only the biggest connected component
-            nodes0 = max(nx.connected_component_subgraphs(g), key=len)
-            nodes0 = nodes = list(nodes0.nodes)
-            score0 = self.new_score(GE, patients_groups[clust], patients_groups[not_clust], nodes0)
-            move = True
+            try:
+                nodes0 = max(nx.connected_component_subgraphs(g), key=len)
+                nodes0 =  list(nodes0.nodes)
+            except ValueError:
+                nodes0 = []
+
             if len(nodes0) != 0:
+                score0 = self.new_score(GE, patients_groups[clust], patients_groups[not_clust], nodes0)
+                move = True
                 while move == True:
                     results = {**self.insertion(L_max, nodes0, G, GE, patients_groups, clust),
                                **self.deletion(L_min, nodes0, G, GE, patients_groups, clust),
                                **self.subst(L_max, nodes0, G, GE, patients_groups, clust)}
 
-                    action = max(results.items(), key=operator.itemgetter(1))[0]
-                    score1 = results[action]
+                    if len(results) != 0:
+                        action = max(results.items(), key=operator.itemgetter(1))[0]
+                        score1 = results[action]
 
-                    delta = score0 - score1
-                    if delta < 0:  # move on
-                        # print(action)
-                        # print(score1)
-                        nodes = self.do_action_nodes(action, nodes0)
-                        nodes0 = nodes
-                        score0 = score1
+                        delta = score0 - score1
+                        if delta < 0:  # move on
+                            # print(action)
+                            # print(score1)
+                            nodes = self.do_action_nodes(action, nodes0)
+                            nodes0 = nodes
+                            score0 = score1
 
-                    else:  # terminate if no improvement
-                        move = False
-                        print("network {0} has converged".format(clust))
-                        print(score1)
-                        print(nx.is_connected(nx.subgraph(G,nodes)))
+                        else:  # terminate if no improvement
+                            move = False
+                            print("network {0} has converged".format(clust))
+                            print(score1)
+                            print(nx.is_connected(nx.subgraph(G,nodes)))
+                    else:
+                        nodes = nodes0
 
             group_g = nodes
             size_comp = len(nodes)
