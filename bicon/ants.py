@@ -266,18 +266,6 @@ class BiCoN(object):
             scores.append(max_total_score)
 
             best_solution = [components, patients_groups]
-            #
-            # data_new = ge[best_solution[0][0] + best_solution[0][1], :]
-            # kmeans = KMeans(n_clusters=2, random_state=0).fit(data_new.T)
-            # labels = kmeans.labels_
-            # patients_groups = []
-            # for clust in range(clusters):
-            #     wh = np.where(labels == clust)[0]
-            #     group_p = [patients[i] for i in wh]
-            #     patients_groups.append(group_p)
-            # if np.mean(ge[best_solution[0][0], :][:, (np.asarray(patients_groups[0]) - n)]) < np.mean(
-            #         ge[best_solution[0][1], :][:, (np.asarray(patients_groups[0]) - n)]):
-            #     patients_groups = patients_groups[::-1]
             best_solution = [best_solution[0], patients_groups]
             print("best  score after LS: " + str(max_total_score))
 
@@ -635,6 +623,9 @@ class BiCoN(object):
                 nodes0 =  list(nodes0.nodes)
             except ValueError:
                 nodes0 = []
+                nodes = gene_groups[clust]
+                size = 0
+
 
             if len(nodes0) != 0:
                 score0 = self.new_score(GE, patients_groups[clust], patients_groups[not_clust], nodes0)
@@ -655,6 +646,7 @@ class BiCoN(object):
                             nodes = self.do_action_nodes(action, nodes0)
                             nodes0 = nodes
                             score0 = score1
+                            size = len(nodes)
 
                         else:  # terminate if no improvement
                             move = False
@@ -663,9 +655,12 @@ class BiCoN(object):
                             print(nx.is_connected(nx.subgraph(G,nodes)))
                     else:
                         nodes = nodes0
+                        move = False
+                        size = len(nodes)
+
 
             group_g = nodes
-            size_comp = len(nodes)
+            size_comp = size
             genes_components.append(group_g)
             sizes.append(size_comp)
         return genes_components, sizes
