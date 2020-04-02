@@ -139,7 +139,8 @@ class BiCoN(object):
                             max_round_score = s
                             n1 = s1
                             n2 = s2
-                            solution, solution_big = res[1,2]
+                            solution= res[1]
+                            solution_big = res[2]
                     if not running:
                         break
 
