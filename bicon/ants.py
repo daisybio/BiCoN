@@ -670,6 +670,7 @@ class BiCoN(object):
 
                             else:  # terminate if no improvement
                                 move = False
+                                nodes = nodes0
                         else:
                             nodes = nodes0
                             move = False
