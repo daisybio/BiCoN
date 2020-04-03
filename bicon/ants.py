@@ -30,7 +30,8 @@ class BiCoN(object):
 
     def run_search(self, n_proc=1, a=1, b=1, K=20, evaporation=0.5, th=1, eps=0.02,
                    times=6, clusters=2, cost_limit=5, max_iter=200, ls=False, opt=None, show_pher=False,
-                   show_plot=False, save=None, show_nets=False, verbose=False):
+                   show_plot=False, save=None, show_nets=False, verbose=True):
+
         """
         Parallel implementation of network constrained bi-clustering
 
@@ -106,11 +107,13 @@ class BiCoN(object):
             print("the joint graph has " + str(n + m) + " nodes")
             print("probability update takes " + str(round(end - st, 3)))
         count_small = 0
+        W = 0
         # termination if the improvements are getting too small
-        while np.abs(max_round_score - av_score) > eps and count_small < times and count_big < max_iter:
+        while np.abs(max_round_score - av_score) > eps and count_small < times and count_big < max_iter and (W<m/3):
             # MULTIPROCESSING SCHEMA
             if n_proc > 1:
                 av_score = 0
+                W = 0
                 max_round_score = 0
                 result = Queue()
                 jobs = []
@@ -132,14 +135,16 @@ class BiCoN(object):
                         res = result.get()
                         s1, s2 = res[0]
                         s = s1 + s2
-                        av_score = av_score + res[-1]
+                        av_score = av_score + res[-2]
+                        W = W + res[-1]
                         # if maximum round score is larger than the current value for this round
                         if s > max_round_score:
                             # save the results
                             max_round_score = s
                             n1 = s1
                             n2 = s2
-                            solution, solution_big, _ = res[1:]
+                            solution= res[1]
+                            solution_big = res[2]
                     if not running:
                         break
 
@@ -168,6 +173,7 @@ class BiCoN(object):
                                                                                                      self.G, ge)
                     scores_per_round.append(tot_score)
                     av_score = av_score + tot_score
+                    W = W + wars
                     if tot_score > max_round_score:
                         max_round_score = tot_score
                         solution = (gene_groups, patients_groups)
@@ -219,6 +225,8 @@ class BiCoN(object):
             if count_big == 0:
                 print("One full iteration takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
             count_big = count_big + 1
+
+
             # visualization options:
 
             if show_pher:
@@ -248,6 +256,12 @@ class BiCoN(object):
             plt.plot(np.arange(count_big), avs, '--')
             plt.savefig(save + ".png")
             plt.close(fig)
+        if np.abs(max_round_score - av_score) <= eps or count_small >= times:
+            print("Full convergence achieved")
+        elif W>=m/3:
+            print("The algorithm did not converge, please run again")
+        else:
+            print("Maximal allowed number of iterations is reached")
 
         # after the solutution is found we make sure to cluster patients the last time with that exact solution:
         data_new = ge[solution[0][0] + solution[0][1], :]
@@ -270,18 +284,6 @@ class BiCoN(object):
             scores.append(max_total_score)
 
             best_solution = [components, patients_groups]
-            #
-            # data_new = ge[best_solution[0][0] + best_solution[0][1], :]
-            # kmeans = KMeans(n_clusters=2, random_state=0).fit(data_new.T)
-            # labels = kmeans.labels_
-            # patients_groups = []
-            # for clust in range(clusters):
-            #     wh = np.where(labels == clust)[0]
-            #     group_p = [patients[i] for i in wh]
-            #     patients_groups.append(group_p)
-            # if np.mean(ge[best_solution[0][0], :][:, (np.asarray(patients_groups[0]) - n)]) < np.mean(
-            #         ge[best_solution[0][1], :][:, (np.asarray(patients_groups[0]) - n)]):
-            #     patients_groups = patients_groups[::-1]
             best_solution = [best_solution[0], patients_groups]
             print("best  score after LS: " + str(max_total_score))
 
@@ -311,7 +313,7 @@ class BiCoN(object):
                 new_scores_best = new_scores
                 s1 = new_scores_best[0][0] * new_scores_best[0][1]
                 s2 = new_scores_best[1][0] * new_scores_best[1][1]
-        result.put([(s1, s2), solution, solution_big, av_score / ants_per_batch])
+        result.put([(s1, s2), solution, solution_big, av_score / ants_per_batch, W])
 
     def neigborhood(self, H, n, th):
         # defines search area for each ant
@@ -615,9 +617,15 @@ class BiCoN(object):
                 group_g = nodes
             elif len(group_g) > 0:
                 g = nx.subgraph(G, group_g)
-                comp_big = max(nx.connected_component_subgraphs(g), key=len)
-                nodes = list(comp_big.nodes)
-                size_comp = len(nodes)
+                try:
+                    comp_big = max(nx.connected_component_subgraphs(g), key=len)
+                    nodes = list(comp_big.nodes)
+                    size_comp = len(nodes)
+                except ValueError:
+                    size_comp = 0
+
+
+
             else:
                 size_comp = 0
 
@@ -632,35 +640,50 @@ class BiCoN(object):
             not_clust = int(clust == 0)
             g = nx.subgraph(G, gene_groups[clust])
             # we are taking only the biggest connected component
-            nodes0 = max(nx.connected_component_subgraphs(g), key=len)
-            nodes0 = nodes = list(nodes0.nodes)
-            score0 = self.new_score(GE, patients_groups[clust], patients_groups[not_clust], nodes0)
-            move = True
+            try:
+                nodes0 = max(nx.connected_component_subgraphs(g), key=len)
+                nodes0 =  list(nodes0.nodes)
+            except ValueError:
+                nodes0 = []
+                nodes = gene_groups[clust]
+                size = 0
+
+
             if len(nodes0) != 0:
-                while move == True:
-                    results = {**self.insertion(L_max, nodes0, G, GE, patients_groups, clust),
-                               **self.deletion(L_min, nodes0, G, GE, patients_groups, clust),
-                               **self.subst(L_max, nodes0, G, GE, patients_groups, clust)}
+                score0 = self.new_score(GE, patients_groups[clust], patients_groups[not_clust], nodes0)
+                if score0 >0 :
+                    move = True
+                    while move:
+                        results = {**self.insertion(L_max, nodes0, G, GE, patients_groups, clust),
+                                   **self.deletion(L_min, nodes0, G, GE, patients_groups, clust),
+                                   **self.subst(L_max, nodes0, G, GE, patients_groups, clust)}
 
-                    action = max(results.items(), key=operator.itemgetter(1))[0]
-                    score1 = results[action]
+                        if len(results) != 0:
+                            action = max(results.items(), key=operator.itemgetter(1))[0]
+                            score1 = results[action]
 
-                    delta = score0 - score1
-                    if delta < 0:  # move on
-                        # print(action)
-                        # print(score1)
-                        nodes = self.do_action_nodes(action, nodes0)
-                        nodes0 = nodes
-                        score0 = score1
+                            delta = score0 - score1
+                            if delta < 0:  # move on
+                                # print(action)
+                                # print(score1)
+                                nodes = self.do_action_nodes(action, nodes0)
+                                nodes0 = nodes
+                                score0 = score1
+                                size = len(nodes)
 
-                    else:  # terminate if no improvement
-                        move = False
-                        print("network {0} has converged".format(clust))
-                        print(score1)
-                        print(nx.is_connected(nx.subgraph(G,nodes)))
-
+                            else:  # terminate if no improvement
+                                move = False
+                                nodes = nodes0
+                                size = len(nodes)
+                        else:
+                            nodes = nodes0
+                            move = False
+                            size = len(nodes)
+                else:
+                    nodes = gene_groups[clust]
+                    size = len(nodes0)
             group_g = nodes
-            size_comp = len(nodes)
+            size_comp = size
             genes_components.append(group_g)
             sizes.append(size_comp)
         return genes_components, sizes
