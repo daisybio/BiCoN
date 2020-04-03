@@ -187,7 +187,7 @@ results.show_networks(GE, G, output = "results/network.png")
 Just with the BiCoN results:
 
 ```python
-results.show_clustermap(GE, G, solution, labels, output = "results/clustermap.png")
+results.show_clustermap(GE, G, output = "results/clustermap.png")
 ```
 If you have a patient's phenotype you would like to use for comparison, please make sure that patients IDs are exactly (!) matching the IDs that were used as an input. The IDs should be represented as a list of two lists, e.g.:
 
@@ -205,7 +205,7 @@ results.jaccard_index(true_labels = true_classes)
 6. BiCoN is using [gseapy](https://gseapy.readthedocs.io/en/master/index.html) module to provide a user with a python wrapper for [Enrichr](https://amp.pharm.mssm.edu/Enrichr/) database. 
 
 ```python
-results.enrichment_analysis(solution, labels, library = 'GO_Biological_Process_2018', "results")
+results.enrichment_analysis(library = 'GO_Biological_Process_2018', output="results")
 ```
 
 After the execution of the given above code, in the */results* directory a user can find a table with enriched pathways as well as enrichment plots. Other available libraries can be used as well, e.g. 'GO_Molecular_Function_2018' and 'GO_Cellular_Component_2018'. In total there are 159 libraries available at the moment and the full list can be found by typing:

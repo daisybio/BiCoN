@@ -28,7 +28,7 @@ class results_analysis():
             http://docs.mygene.info/en/latest/doc/query_service.html#available_fields
     """
 
-    def __init__(self, solution, labels, convert=False, origID=None):
+    def __init__(self, solution, labels, convert=False, origID=None, species='human'):
         self.solution = solution
         self.labels = labels
         self.patients1 = [str(self.labels[x]) for x in self.solution[1][0]]
@@ -42,7 +42,12 @@ class results_analysis():
             assert origID != None, "Please specify the original gene ID or set 'convert' to False"
             all_genes = self.genes1 + self.genes2
             mg = mygene.MyGeneInfo()
-            out = mg.querymany(all_genes, scopes=self.origID, fields='symbol', species='human', verbose=False)
+            # set delay - if querying more than 1k genes it can get super slow
+            mg.delay = 0.1
+            # TODO define caching file - eg
+            # mg.set_caching("/tmp/BiCoN/genes.db")
+            # ? only makes sense if running many times in a row
+            out = mg.querymany(all_genes, scopes=self.origID, fields='symbol', species=species, verbose=False)
             mapping = dict()
             rev_mapping = dict()
             for line in out:
@@ -301,6 +306,8 @@ class results_analysis():
         ids = jac_matrix([self.patients1, self.patients2], true_labels)
 
         print("Jaccard indices for two groups are {0} and {1}".format(round(ids[0], 2), round(ids[1], 2)))
+        # actually return the ids aswell
+        return(round(ids[0], 2), round(ids[1], 2))
 
     def enrichment_analysis(self, library, output):
         """

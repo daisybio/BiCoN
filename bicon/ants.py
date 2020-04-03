@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from sklearn import preprocessing
 import seaborn as sns
 from sklearn.cluster import KMeans
+from tqdm import tqdm
 import gc
 import operator
 # import warnings
@@ -28,8 +29,9 @@ class BiCoN(object):
         self.L_g_max = L_g_max
 
     def run_search(self, n_proc=1, a=1, b=1, K=20, evaporation=0.5, th=1, eps=0.02,
-                   times=6, clusters=2, cost_limit=5, max_iter=100, ls=False, opt=None, show_pher=False,
-                   show_plot=False, save=None, show_nets=False):
+                   times=6, clusters=2, cost_limit=5, max_iter=200, ls=False, opt=None, show_pher=False,
+                   show_plot=False, save=None, show_nets=False, verbose=True):
+
         """
         Parallel implementation of network constrained bi-clustering
 
@@ -40,7 +42,7 @@ class BiCoN(object):
         GE - pandas data frame with gene expression data. Genes are rows, patients - columns
         G - networkX graph with a network
         L_g_min - minimal number of genes in one subnetwork
-        L_g_max - minimal number of genes in one subnetwork
+        L_g_max - maximal number of genes in one subnetwork
 
         default:
         K - number of ants (less ants - less space exploration. Usually set between 20 and 50, default - 20)
@@ -99,10 +101,11 @@ class BiCoN(object):
         end = time.time()
         # flag tracks when the score stops improving and terminates the optimization as convergence is reached
         score_change = []
-        print("Run time statistics:")
-        print("###############################################################")
-        print("the joint graph has " + str(n + m) + " nodes")
-        print("probability update takes " + str(round(end - st, 3)))
+        if verbose:
+            print("Run time statistics:")
+            print("###############################################################")
+            print("the joint graph has " + str(n + m) + " nodes")
+            print("probability update takes " + str(round(end - st, 3)))
         count_small = 0
         W = 0
         # termination if the improvements are getting too small
@@ -115,6 +118,7 @@ class BiCoN(object):
                 result = Queue()
                 jobs = []
                 ants_per_batch = round(K / n_proc)
+
                 for pr in range(n_proc):
                     # random random seeds to avoid identical random walks
                     ss = np.random.choice(np.arange(pr * ants_per_batch, pr * ants_per_batch + ants_per_batch),
@@ -156,7 +160,7 @@ class BiCoN(object):
                 max_round_score = 0
                 scores_per_round = []
                 st = time.time()
-                for i in range(K):
+                for i in tqdm(range(K)):
                     # for each ant
                     tot_score, gene_groups, patients_groups, new_scores, wars, no_int = self.ant_job(self.GE, N, H, th,
                                                                                                      clusters, probs, a,
@@ -195,12 +199,13 @@ class BiCoN(object):
                 count_small = 0
 
             score_change.append(round(max_round_score, 3))
-            print("Iteration # " + str(count_big + 1))
-            if count_big == 0:
-                print("One ant work takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
-            print("best round score: " + str(round(max_round_score, 3)))
-            print("average score: " + str(round(av_score, 3)))
-            print("Count small = {}".format(count_small))
+            if verbose:
+                print("Iteration # " + str(count_big + 1))
+                if count_big == 0:
+                    print("One ant work takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
+                print("best round score: " + str(round(max_round_score, 3)))
+                print("average score: " + str(round(av_score, 3)))
+                print("Count small = {}".format(count_small))
             # Pheromone update
             t0 = self.pher_upd(t0, t_min, evaporation, [n1, n2], solution_big_best)
             # Probability update
@@ -281,8 +286,6 @@ class BiCoN(object):
             best_solution = [components, patients_groups]
             best_solution = [best_solution[0], patients_groups]
             print("best  score after LS: " + str(max_total_score))
-
-
 
         # # print_clusters(GE,best_solution)
         # # features(best_solution, GE,G)
@@ -448,9 +451,9 @@ class BiCoN(object):
                 for g2 in group_g:
                     t_new[g1, g2] = t[g1, g2] + sc
 
-        # assert t_new.sum() >= 0, "negative pheromone update"
+        assert t_new.sum() >= 0, "negative pheromone update"
         t_new[t_new < t_min] = t_min
-        assert t_new.sum() != 0, "Bad pheromone update: most likely your data does not have 2 differentially expressed subnetworks of the required size "
+        assert t_new.sum() != 0, "Bad pheromone update"
 
         return (t_new)
 
