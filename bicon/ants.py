@@ -28,7 +28,7 @@ class BiCoN(object):
         self.L_g_max = L_g_max
 
     def run_search(self, n_proc=1, a=1, b=1, K=20, evaporation=0.5, th=1, eps=0.02,
-                   times=6, clusters=2, cost_limit=5, max_iter=200, ls=False, opt=None, show_pher=False,
+                   times=6, clusters=2, cost_limit=5, max_iter=100, ls=False, opt=None, show_pher=False,
                    show_plot=False, save=None, show_nets=False):
         """
         Parallel implementation of network constrained bi-clustering
@@ -648,9 +648,9 @@ class BiCoN(object):
 
             if len(nodes0) != 0:
                 score0 = self.new_score(GE, patients_groups[clust], patients_groups[not_clust], nodes0)
-                if score0 >0:
+                if score0 >0 :
                     move = True
-                    while move == True:
+                    while move:
                         results = {**self.insertion(L_max, nodes0, G, GE, patients_groups, clust),
                                    **self.deletion(L_min, nodes0, G, GE, patients_groups, clust),
                                    **self.subst(L_max, nodes0, G, GE, patients_groups, clust)}
@@ -671,12 +671,13 @@ class BiCoN(object):
                             else:  # terminate if no improvement
                                 move = False
                                 nodes = nodes0
+                                size = len(nodes)
                         else:
                             nodes = nodes0
                             move = False
                             size = len(nodes)
                 else:
-                    nodes = nodes0
+                    nodes = gene_groups[clust]
                     size = len(nodes0)
             group_g = nodes
             size_comp = size
