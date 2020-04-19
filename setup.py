@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="bicon",
-    version="1.1.7",
+    version="1.2.1",
     author="Olga Lazareva",
     author_email="olga.lazareva@tum.de",
     description="BiCoN - a package for network-constrained biclustering of omics data",
@@ -28,8 +28,7 @@ setuptools.setup(
         'gseapy==0.9.15',
         'seaborn==0.9.0',
         'mygene==3.1.0',
-        'scikit_learn',
-        'tqdm==4.7.2'
+        'scikit_learn'
     ],
 
 )

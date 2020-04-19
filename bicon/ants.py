@@ -29,7 +29,7 @@ class BiCoN(object):
         self.L_g_max = L_g_max
 
     def run_search(self, n_proc=1, a=1, b=1, K=20, evaporation=0.5, th=1, eps=0.02,
-                   times=6, clusters=2, cost_limit=5, max_iter=200, ls=False, opt=None, show_pher=False,
+                   times=6, clusters=2, cost_limit=5, max_iter=100, ls=True, opt=None, show_pher=False,
                    show_plot=False, save=None, show_nets=False, verbose=True):
 
         """
@@ -160,7 +160,7 @@ class BiCoN(object):
                 max_round_score = 0
                 scores_per_round = []
                 st = time.time()
-                for i in tqdm(range(K)):
+                for i in range(K):
                     # for each ant
                     tot_score, gene_groups, patients_groups, new_scores, wars, no_int = self.ant_job(self.GE, N, H, th,
                                                                                                      clusters, probs, a,
@@ -279,12 +279,13 @@ class BiCoN(object):
         print("best  score: " + str(max_total_score))
         if ls:
             components, sizes = self.opt_net(best_solution[0], patients_groups, self.L_g_min, self.L_g_max, self.G, self.GE, clusters)
-            max_total_score = self.score(self.G, patients_groups, components, n, m, ge, sizes, self.L_g_min, self.L_g_max)
-            max_total_score = max_total_score[0][0] * max_total_score[0][1] + max_total_score[1][0] * max_total_score[1][1]
-            scores.append(max_total_score)
-
-            best_solution = [components, patients_groups]
-            best_solution = [best_solution[0], patients_groups]
+            max_ls_score = self.score(self.G, patients_groups, components, n, m, ge, sizes, self.L_g_min, self.L_g_max)
+            max_ls_score = max_ls_score[0][0] * max_ls_score[0][1] + max_ls_score[1][0] * max_ls_score[1][1]
+            if max_ls_score>max_total_score:
+                scores.append(max_ls_score)
+                max_total_score = max_ls_score
+                best_solution = [components, patients_groups]
+                best_solution = [best_solution[0], patients_groups]
             print("best  score after LS: " + str(max_total_score))
 
         # # print_clusters(GE,best_solution)
