@@ -83,7 +83,7 @@ class BiCoN(object):
         patients = np.arange(n, n + m)
         # cost of transitions for ants
         cost = H / 10
-        cost = np.max(cost) - cost
+        cost = 0.1 + np.max(cost) - cost
         # stores all scores
         scores = []
         avs = []
