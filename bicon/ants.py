@@ -14,8 +14,8 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 import gc
 import operator
-# import warnings
-# warnings.filterwarnings("ignore")
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 sns.set(color_codes=True)
 flatten = lambda l: [item for sublist in l for item in sublist]
@@ -63,7 +63,6 @@ class BiCoN(object):
         show_nets - set true if the selected network should be shown at each iteration
 
         """
-
         assert n_proc > 0, "Set a correct number for n_proc, right now the value is {0}".format(n_proc)
         assert n_proc <= mp.cpu_count() - 1, 'n_proc should not exceed {0}. The value of n_proc was: {1}'.format(
             mp.cpu_count(), n_proc)
@@ -97,12 +96,18 @@ class BiCoN(object):
         t_min = 0
         # initial probabilities
         st = time.time()
-        probs = self.prob_upd(H, t0, a, b, n, th, N)
+        probs,war = self.prob_upd(H, t0, a, b, n, th, N)
+        while war == True and th >-1:
+            th = th-0.5
+            N = self.neigborhood(H, n, th)
+            probs, war = self.prob_upd(H, t0, a, b, n, th, N)
+
+
         end = time.time()
         # flag tracks when the score stops improving and terminates the optimization as convergence is reached
         score_change = []
         if verbose:
-            print("Run time statistics:")
+            print("Runt ime statistics:")
             print("###############################################################")
             print("the joint graph has " + str(n + m) + " nodes")
             print("probability update takes " + str(round(end - st, 3)))
@@ -209,19 +214,19 @@ class BiCoN(object):
             # Pheromone update
             t0 = self.pher_upd(t0, t_min, evaporation, [n1, n2], solution_big_best)
             # Probability update
-            probs = self.prob_upd(H, t0, a, b, n, th, N)
-            if probs[0][0, :].sum() == 0:
-                print("threshold lowered")
-                th = 0
-                probs = self.prob_upd(H, t0, a, b, n, th, N)
-            # lower the threshold even more even there are still not enough conected genes
-            if probs[0][0, :].sum() == 0:
-                th = -1
-                print("minimal possible threshold employed)")
-                probs = self.prob_upd(H, t0, a, b, n, th, N)
-            assert probs[0][0,
-                   :].sum() != 0, 'Bad probability update. This often happens when there are not enough connected genes or ' \
-                                  'the signal in the data is too weak. Try selecting more genes (e.g. 3000)'
+            probs,_ = self.prob_upd(H, t0, a, b, n, th, N)
+            # if probs[0][0, :].sum() == 0:
+            #     print("threshold lowered")
+            #     th = 0
+            #     probs = self.prob_upd(H, t0, a, b, n, th, N)
+            # # lower the threshold even more even there are still not enough conected genes
+            # if probs[0][0, :].sum() == 0:
+            #     th = -1
+            #     print("minimal possible threshold employed)")
+            #     probs = self.prob_upd(H, t0, a, b, n, th, N)
+            # assert probs[0][0,
+            #        :].sum() != 0, 'Bad probability update. This often happens when there are not enough connected genes or ' \
+            #                       'the signal in the data is too weak. Try selecting more genes (e.g. 3000)'
             if count_big == 0:
                 print("One full iteration takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
             count_big = count_big + 1
@@ -336,21 +341,29 @@ class BiCoN(object):
         # updates probability
         P_per_patient = []
         dim = len(H)
+        t = t.astype('float64')
+        H = H.astype('float64')
         temp_t = np.power(t, a)
         temp_H = np.power(H, b)
         temp = temp_t * temp_H
-
+        war = False
         for i in range(n, dim):
             N_temp = N_per_patient[i - n]
             P = temp[:, N_temp]
             s = np.sum(P, axis=1)
-            s[s < 1.e-4] = 1
+            for j in range(len(s)):
+                if s[j] < 1.e-4:
+                    P[j,:] = P[j,:] + 0.01
+                    s[j] = np.sum(P[j,:])
+                    
             sum_p = 1 / s
             sum_p = sum_p[:, None]
             P_new = P * sum_p[:np.newaxis]
             P_per_patient.append(P_new)
-
-        return (P_per_patient)
+            zeros = np.where(~P_new.any(axis=1))[0]
+            if len(zeros) != 0:
+                war = True
+        return (P_per_patient, war)
 
     def walk(self, start, Nn, P_small, cost, k, n, seed=None):
         # Initialize a random walk
@@ -360,23 +373,24 @@ class BiCoN(object):
         while go == True:
             P_new = P_small[start, :]
             # if there is any node inside the radious - keep mooving
-            if np.sum(P_new) > 0.5:
-                # transition:
-                if seed != None:
-                    np.random.seed(seed)
+
+            # transition:
+            if seed != None:
+                np.random.seed(seed)
+            try:
                 tr = np.random.choice(Nn, 1, False, p=P_new)[0]
-                c = cost[start, tr]
-                # if there is any cost left we keep going
-                if k - c > 0:
-                    path.append(tr)
-                    start = tr
-                    k = k - c
-                # if not we are done and we save only genes from the path
-                else:
-                    go = False
-            # no node to go - we are done and we save only genes from the path
+            except ValueError:
+                tr = np.random.choice(Nn, 1, False, p=np.ones(len(P_new))*(1/len(P_new)))[0]
+            c = cost[start, tr]
+            # if there is any cost left we keep going
+            if k - c > 0:
+                path.append(tr)
+                start = tr
+                k = k - c
+            # if not we are done and we save only genes from the path
             else:
                 go = False
+
         path = np.asarray(path)
         path = path[path < n]
         # we are saving only genes
@@ -389,7 +403,6 @@ class BiCoN(object):
         wars = 0
         # set an ant on every patient
         for w in range(m):
-            # print(w)
             k = cost_limit
             start = patients[w]
             Nn = N[w]  # neigbohood
@@ -452,7 +465,9 @@ class BiCoN(object):
                 for g2 in group_g:
                     t_new[g1, g2] = t[g1, g2] + sc
 
-        assert t_new.sum() >= 0, "negative pheromone update"
+        if t_new.sum() < 0:
+            t_new = np.copy(t)
+            
         t_new[t_new < t_min] = t_min
         assert t_new.sum() != 0, "Bad pheromone update"
 
