@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="bicon",
-    version="1.2.2",
+    version="1.2.4",
     author="Olga Lazareva",
     author_email="olga.lazareva@tum.de",
     description="BiCoN - a package for network-constrained biclustering of omics data",
@@ -20,16 +20,16 @@ setuptools.setup(
     ],
     python_requires='>=3.6',
     install_requires=[
-        'pandas==1.0.1',
-        'numpy==1.18.1',
-        'networkx==2.3',
-        'matplotlib==3.1.0',
-        'scipy==1.3.0',
-        'gseapy==0.9.15',
-        'seaborn==0.9.0',
-        'mygene==3.1.0',
-        'scikit_learn',
-        'tqdm==4.45.0'
+        'pandas>=1.0.1',
+        'numpy>=1.18.1',
+        'networkx>=2.3',
+        'matplotlib>=3.1.0',
+        'scipy>=1.3.0',
+        'gseapy>=0.9.15',
+        'seaborn>=0.9.0',
+        'mygene>=3.1.0',
+        'scikit_learn>=0.22',
+        'tqdm>=4.45.0'
     ],
 
 )

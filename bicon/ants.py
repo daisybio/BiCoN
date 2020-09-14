@@ -30,7 +30,7 @@ class BiCoN(object):
 
     def run_search(self, n_proc=1, a=1, b=1, K=20, evaporation=0.5, th=1, eps=0.02,
                    times=6, clusters=2, cost_limit=5, max_iter=100, ls=True, opt=None, show_pher=False,
-                   show_plot=False, save=None, show_nets=False, verbose=True):
+                   show_plot=False, save=None, show_nets=False, verbose=True, logging = False):
 
         """
         Parallel implementation of network constrained bi-clustering
@@ -72,7 +72,8 @@ class BiCoN(object):
         # heurisic information
         H = self.HI_big(self.GE, A)
         H = H.astype(np.short)
-
+        if logging:
+            f = open("bicon_logs.txt", "w")
         n, m = self.GE.shape
         # TODO: rewrite functions such that they all could use numpy matrices
         ge = self.GE.values
@@ -106,11 +107,27 @@ class BiCoN(object):
         end = time.time()
         # flag tracks when the score stops improving and terminates the optimization as convergence is reached
         score_change = []
+        p_time = str(round(end - st, 3))
         if verbose:
-            print("Runt ime statistics:")
+            print("Runtime statistics:")
             print("###############################################################")
             print("the joint graph has " + str(n + m) + " nodes")
-            print("probability update takes " + str(round(end - st, 3)))
+
+            print("probability update takes " + p_time)
+        if logging:
+            f.write("Runtime statistics:")
+            f.write("\n")
+            f.write("###############################################################")
+            f.write("\n")
+            f.write("the joint graph has " + str(n + m) + " nodes")
+            f.write("\n")
+            f.write("probability update takes " + p_time)
+            f.write("\n")
+
+
+
+
+
         count_small = 0
         W = 0
         # termination if the improvements are getting too small
@@ -191,7 +208,11 @@ class BiCoN(object):
                 scores.append(max_round_score)
 
                 end = time.time()
-                print("total run-time is {0}".format(end - st))
+                if verbose:
+                    print("total run-time is {0}".format(end - st))
+                if logging:
+                    f.write("total run-time is {0}".format(end - st))
+                    f.write("\n")
 
             # saving rhe best overall solution
             if np.round(max_round_score, 3) == np.round(max_total_score, 3):
@@ -204,13 +225,27 @@ class BiCoN(object):
                 count_small = 0
 
             score_change.append(round(max_round_score, 3))
+            ant_time = round(time.time() - st, 2)
             if verbose:
                 print("Iteration # " + str(count_big + 1))
                 if count_big == 0:
-                    print("One ant work takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
+                    print("One ant work takes {0} with {1} processes".format(ant_time, n_proc))
                 print("best round score: " + str(round(max_round_score, 3)))
                 print("average score: " + str(round(av_score, 3)))
                 print("Count small = {}".format(count_small))
+            if logging:
+                f.write("Iteration # " + str(count_big + 1))
+                f.write("\n")
+                if count_big == 0:
+                    f.write("One ant work takes {0} with {1} processes".format(ant_time, n_proc))
+                    f.write("\n")
+                f.write("best round score: " + str(round(max_round_score, 3)))
+                f.write("\n")
+                f.write("average score: " + str(round(av_score, 3)))
+                f.write("\n")
+                f.write("Count small = {}".format(count_small))
+                f.write("\n")
+
             # Pheromone update
             t0 = self.pher_upd(t0, t_min, evaporation, [n1, n2], solution_big_best)
             # Probability update
@@ -227,8 +262,13 @@ class BiCoN(object):
             # assert probs[0][0,
             #        :].sum() != 0, 'Bad probability update. This often happens when there are not enough connected genes or ' \
             #                       'the signal in the data is too weak. Try selecting more genes (e.g. 3000)'
-            if count_big == 0:
+            if count_big == 0 and verbose:
                 print("One full iteration takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
+            if count_big == 0 and verbose:
+                f.write("One full iteration takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
+                f.write("\n")
+
+
             count_big = count_big + 1
 
 
@@ -261,12 +301,22 @@ class BiCoN(object):
             plt.plot(np.arange(count_big), avs, '--')
             plt.savefig(save + ".png")
             plt.close(fig)
-        if np.abs(max_round_score - av_score) <= eps or count_small >= times:
+        if (np.abs(max_round_score - av_score) <= eps or count_small >= times) and verbose:
             print("Full convergence achieved")
-        elif W>=m/3:
+        elif W>=m/3 and verbose:
             print("The algorithm did not converge, please run again")
-        else:
+        elif verbose:
             print("Maximal allowed number of iterations is reached")
+
+        if (np.abs(max_round_score - av_score) <= eps or count_small >= times) and logging:
+            f.write("Full convergence achieved")
+            f.write("\n")
+        elif W>=m/3 and logging:
+            f.write("The algorithm did not converge, please run again")
+            f.write("\n")
+        elif logging:
+            f.write("Maximal allowed number of iterations is reached")
+            f.write("\n")
 
         # after the solutution is found we make sure to cluster patients the last time with that exact solution:
         data_new = ge[solution[0][0] + solution[0][1], :]
@@ -281,7 +331,12 @@ class BiCoN(object):
                 ge[best_solution[0][1], :][:, (np.asarray(patients_groups[0]) - n)]):
             patients_groups = patients_groups[::-1]
         best_solution = [best_solution[0], patients_groups]
-        print("best  score: " + str(max_total_score))
+        if verbose:
+            print("best  score: " + str(max_total_score))
+        if logging:
+            f.write("best  score: " + str(max_total_score))
+            f.write("\n")
+
         if ls:
             components, sizes = self.opt_net(best_solution[0], patients_groups, self.L_g_min, self.L_g_max, self.G, self.GE, clusters)
             max_ls_score = self.score(self.G, patients_groups, components, n, m, ge, sizes, self.L_g_min, self.L_g_max)
@@ -291,7 +346,12 @@ class BiCoN(object):
                 max_total_score = max_ls_score
                 best_solution = [components, patients_groups]
                 best_solution = [best_solution[0], patients_groups]
-            print("best  score after LS: " + str(max_total_score))
+            if verbose:
+                print("best  score after LS: " + str(max_total_score))
+            if logging:
+                f.write("best  score after LS: " + str(max_total_score))
+                f.close()
+
 
         # # print_clusters(GE,best_solution)
         # # features(best_solution, GE,G)
