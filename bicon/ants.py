@@ -61,6 +61,9 @@ class BiCoN(object):
         show_plot - set true if convergence plots should be shown
         save - set an output file name  if the convergence plot should be saved in the end
         show_nets - set true if the selected network should be shown at each iteration
+        verbose - set true to print information about the algorithm's progress
+        logging - set true to save information about algorithm's progress to bicon_logging.txt file
+
 
         """
         assert n_proc > 0, "Set a correct number for n_proc, right now the value is {0}".format(n_proc)
