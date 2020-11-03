@@ -267,7 +267,7 @@ class BiCoN(object):
             #                       'the signal in the data is too weak. Try selecting more genes (e.g. 3000)'
             if count_big == 0 and verbose:
                 print("One full iteration takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
-            if count_big == 0 and verbose:
+            if count_big == 0 and logging:
                 f.write("One full iteration takes {0} with {1} processes".format(round(time.time() - st, 2), n_proc))
                 f.write("\n")
 

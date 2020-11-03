@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="bicon",
-    version="1.2.4",
+    version="1.2.5",
     author="Olga Lazareva",
     author_email="olga.lazareva@tum.de",
     description="BiCoN - a package for network-constrained biclustering of omics data",
