@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from sklearn import preprocessing
 import seaborn as sns
 from sklearn.cluster import KMeans
-from tqdm import tqdm
 import gc
 import operator
 import warnings
