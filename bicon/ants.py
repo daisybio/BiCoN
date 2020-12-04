@@ -91,6 +91,7 @@ class BiCoN(object):
         avs = []
         count_big = 0
         max_total_score = 0
+        n1, n2 = (0,0)
         max_round_score = -100
         av_score = 0
         # initial pheromone level set to a maximal possible level (5 standard deviations)
@@ -668,7 +669,7 @@ class BiCoN(object):
                 while max_out > 0:
                     # measure the difference in the expression between two groups for d == 1 nodes
 
-                    dif = np.mean(GE[patients_groups[clust]].loc[ones], axis=1) - np.mean(GE[patients_groups[not_clust]].loc[ones], axis=1)
+                    dif = np.mean(GE[patients_groups[clust]].reindex(index = ones), axis=1) - np.mean(GE[patients_groups[not_clust]].reindex(index =ones), axis=1)
                     dif = dif.sort_values()
                     # therefore we select the nodes with d == 1 and low difference
                     ones = list(dif[dif < 1.5].index)
