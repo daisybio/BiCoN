@@ -90,7 +90,7 @@ class BiCoN(object):
         scores = []
         avs = []
         count_big = 0
-        max_total_score = 0
+        max_total_score = -100
         n1, n2 = (0,0)
         max_round_score = -100
         av_score = 0
@@ -622,8 +622,8 @@ class BiCoN(object):
         genes1, genes2 = solution[0]
         patients1, patients2 = solution[1]
 
-        means1 = list(np.mean(GE[patients1].loc[genes1], axis=1) - np.mean(GE[patients2].loc[genes1], axis=1).values)
-        means2 = list(np.mean(GE[patients1].loc[genes2], axis=1) - np.mean(GE[patients2].loc[genes2], axis=1).values)
+        means1 = list(np.mean(GE[patients1].reindex(index = genes1), axis=1) - np.mean(GE[patients2].reindex(index = genes1), axis=1).values)
+        means2 = list(np.mean(GE[patients1].reindex(index = genes2), axis=1) - np.mean(GE[patients2].reindex(index = genes2), axis=1).values)
 
         G_small = nx.subgraph(G, genes1 + genes2)
 
@@ -657,7 +657,8 @@ class BiCoN(object):
             if len(group_g) >= L_g:
                 g = nx.subgraph(G, group_g)
                 # we are taking only the biggest connected component
-                comp_big = max(nx.connected_component_subgraphs(g), key=len)
+                comp_big = g.subgraph(max(nx.connected_components(g), key=len))
+
                 # measure the degree of each node in it
                 dg = dict(nx.degree(comp_big))
                 # separate those with d == 1 as nodes that we can kick out potentially
@@ -681,7 +682,8 @@ class BiCoN(object):
 
                         nodes = list(set(nodes) - set(outsiders))
                         g = nx.subgraph(G, nodes)
-                        comp_big = max(nx.connected_component_subgraphs(g), key=len)
+                        comp_big = g.subgraph(max(nx.connected_components(g), key=len))
+
                         dg = dict(nx.degree(comp_big))
                         if d_cut == 1:
                             ones = [x for x in dg if (dg[x] == 1)]
@@ -833,8 +835,8 @@ class BiCoN(object):
         return results
 
     def new_score(self, GE, pg, npg, gg):
-        dif = np.mean(np.mean(GE[pg].loc[gg], axis=1)) - np.mean(np.mean(
-            GE[npg].loc[gg], axis=1))
+        dif = np.mean(np.mean(GE[pg].reindex(index = gg), axis=1)) - np.mean(np.mean(
+            GE[npg].reindex(index = gg), axis=1))
         return dif
 
     def do_action_nodes(self, action, nodes):
