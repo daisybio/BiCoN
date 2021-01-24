@@ -699,7 +699,7 @@ class BiCoN(object):
             elif len(group_g) > 0:
                 g = nx.subgraph(G, group_g)
                 try:
-                    comp_big = max(nx.connected_component_subgraphs(g), key=len)
+                    comp_big = comp_big = g.subgraph(max(nx.connected_components(g), key=len))
                     nodes = list(comp_big.nodes)
                     size_comp = len(nodes)
                 except ValueError:
@@ -722,7 +722,7 @@ class BiCoN(object):
             g = nx.subgraph(G, gene_groups[clust])
             # we are taking only the biggest connected component
             try:
-                nodes0 = max(nx.connected_component_subgraphs(g), key=len)
+                nodes0 =  g.subgraph(max(nx.connected_components(g), key=len))
                 nodes0 =  list(nodes0.nodes)
             except ValueError:
                 nodes0 = []
