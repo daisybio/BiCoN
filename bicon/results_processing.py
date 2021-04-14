@@ -156,7 +156,7 @@ class results_analysis():
             plt.savefig(output, dpi=300)
         plt.show()
 
-    def show_clustermap(self, GE, G, true_labels=None, output=None):
+    def show_clustermap(self, GE, G, true_labels=None, output=None, class_names = []):
         """
         Shows a clustermap of the achieved solution alone or also along with the known patients groups
 
@@ -251,7 +251,10 @@ class results_analysis():
             # g.ax_row_dendrogram.set_visible(False)
             # g.cax.set_visible(False)
 
-            values = ["true class1", "true class2", "cluster1", "cluster2"]
+            if len(class_names) != 2:
+                values = ["true class1", "true class2", "cluster1", "cluster2"]
+            else:
+                values = [class_names[0], class_names[1], "cluster1", "cluster2"]
             colors = ['#F3FF33', 'm', '#4FB6D3', '#22863E']
             for i in range(len(values)):
                 l = values[i]
