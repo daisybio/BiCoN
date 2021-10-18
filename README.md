@@ -192,8 +192,8 @@ results.show_clustermap(GE, G, output = "results/clustermap.png")
 If you have a patient's phenotype you would like to use for comparison, please make sure that patients IDs are exactly (!) matching the IDs that were used as an input. The IDs should be represented as a list of two lists, e.g.:
 
 ```python
-true_classes = ['GSM748056', 'GSM748059',..], ['GSM748278', 'GSM748279', 'GSM1465989']
-results.show_clustermap(GE, G, solution, labels, output = "results/clustermap.png", true_labels = true_classes)
+true_classes = [['GSM748056', 'GSM748059',..], ['GSM748278', 'GSM748279', 'GSM1465989']]
+results.show_clustermap(GE, G, output = "results/clustermap.png", true_labels = true_classes)
 ```
 
 5. Given a known phenotype in a format described above, BiCoN can also return Jaccard index of the achieved patients clustering with a given phenotype:
