@@ -253,7 +253,7 @@ model = BiCoN(GE,G,L_g_min,L_g_max)
 solution,scores= model.run_search(th = 0)
 
 ```
-2. Otherwise, the problem might be related to the way you have processed your data. Please make sure that you do not have not expressed genes for the magority of the patients, that you log2 or even log10 scaled your values.
+2. Otherwise, the problem might be related to the way you have processed your data. Please make sure that you do not have not expressed genes for the magority of the patients.
 
 
 ## Cite
