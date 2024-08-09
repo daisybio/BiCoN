@@ -22,9 +22,9 @@ setuptools.setup(
     install_requires=[
         'pandas>=1.0.1',
         'numpy>=1.18.1',
-        'networkx>=2.3',
+        'networkx>=2.3,<3.0',
         'matplotlib>=3.1.0',
-        'scipy>=1.3.0',
+        'scipy>=1.3.0,<1.14.0',
         'gseapy==0.9.15',
         'seaborn>=0.9.0',
         'mygene>=3.1.0',
